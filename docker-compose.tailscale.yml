@@ -1,0 +1,18 @@
+version: "2"
+services:
+  tailscale:
+    build: tailscale
+    environment:
+      TAILSCALE_AUTH_KEY: ${TAILSCALE_AUTH_KEY:?err}
+      TAILSCALE_HOSTNAME: ${TAILSCALE_HOSTNAME:-ctf}
+      TAILSCALE_STATE_ARG: "mem:"
+    depends_on:
+      - ctfd
+  nginx:
+    image: nginx:stable
+    restart: always
+    network_mode: service:tailscale
+    volumes:
+      - ./conf/nginx/http.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - ctfd
