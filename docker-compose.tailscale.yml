@@ -1,18 +1,25 @@
 version: "2"
+volumes:
+  tailscale:
+
 services:
   tailscale:
-    build: tailscale
+    image: tailscale/tailscale:v1.38.4
     environment:
-      TAILSCALE_AUTH_KEY: ${TAILSCALE_AUTH_KEY:?err}
-      TAILSCALE_HOSTNAME: ${TAILSCALE_HOSTNAME:-ctf}
-      TAILSCALE_STATE_ARG: "mem:"
+      TS_AUTHKEY: ${TS_AUTHKEY:?err}
+      TS_EXTRA_ARGS: --hostname="${TS_HOSTNAME}"
+      TS_SOCKET: /var/run/tailscale/tailscaled.sock
     depends_on:
-      - ctfd
-  nginx:
-    image: nginx:stable
+      - nginx
+    volumes:
+      - tailscale:/var/run/tailscale
+  caddy:
+    image: caddy:2.6.4-alpine
+    user: "0"
+    command: caddy reverse-proxy --from ${TS_HOSTNAME}.${TS_TAILNET_NAME} --to nginx:8337
     restart: always
     network_mode: service:tailscale
     volumes:
-      - ./conf/nginx/http.conf:/etc/nginx/nginx.conf
+      - tailscale:/var/run/tailscale
     depends_on:
-      - ctfd
+      - nginx
